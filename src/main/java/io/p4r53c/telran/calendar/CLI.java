@@ -8,6 +8,8 @@ import picocli.CommandLine.HelpCommand;
 import java.time.LocalDate;
 import java.util.concurrent.Callable;
 
+import io.p4r53c.telran.calendar.exceptions.CalendarException;
+
 /**
  * CLI class generates POSIX compliant CLI for Terminal Calendar.
  * 
@@ -17,9 +19,6 @@ import java.util.concurrent.Callable;
 @Command(name = "terminal-calendar.jar", mixinStandardHelpOptions = true, version = "Terminal Calendar 1.0 (c) p4r53c", description = "Prints a calendar for a given month and year.", subcommands = {
         HelpCommand.class })
 public class CLI implements Callable<Integer> {
-
-    private int statusCode;
-    private MonthYear monthYear;
 
     @Option(names = { "-m", "--month" }, description = "Month number (1-12).", defaultValue = "0")
     private int month;
@@ -38,35 +37,41 @@ public class CLI implements Callable<Integer> {
      * Overrides the call method from the Callable interface. This method is
      * responsible for outputting a calendar based on the provided input.
      * 
-     * Due to its specificity, this method is a bit complicated and has more than
-     * one return statement.
+     * This method returns control to the main() method after the thread finishes.
+     * The main() method calls System.exit() and returns control to the OS.
+     * I'm afraid there's no point in refactoring this method to have one return
+     * statement.
      *
      * @return an integer representing the exit code of the program. 0 indicates
      *         success, 1 indicates an error occurred.
      */
     @Override
     public Integer call() {
+        MonthYear monthYear;
+
         try {
             if (now) {
                 LocalDate currentDate = LocalDate.now();
                 monthYear = new MonthYear(currentDate.getMonthValue(), currentDate.getYear());
 
-                // Despite the exception handling in the Calendar constructor, this check is not
-                // redundant, since there is no other way to check for missing arguments and
-                // invoke usage().
+                // is not redundant, since there is no other way to check for missing arguments,
+                // invoke usage() and return control from thread to main.
             } else if (month == 0 || year == 0) {
                 CommandLine.usage(this, System.out);
-                System.exit(0);
+                return 0;
             } else {
                 monthYear = new MonthYear(month, year);
             }
             Calendar calendar = new Calendar(monthYear, firstDay);
             calendar.printCalendar();
-        } catch (Exception e) {
+        } catch (CalendarException e) {
             System.err.println("Error: " + e.getMessage());
-            statusCode = 1;
+            return 1;
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return 1;
         }
 
-        return statusCode;
+        return 0;
     }
 }

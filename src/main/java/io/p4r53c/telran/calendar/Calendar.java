@@ -5,6 +5,8 @@ import java.time.DayOfWeek;
 import java.time.Month;
 import java.time.Year;
 
+import io.p4r53c.telran.calendar.exceptions.CalendarException;
+
 /**
  * Represents a terminal calendar.
  *
@@ -18,20 +20,21 @@ public class Calendar {
 
     // ANSI escape codes for colors
     private static final String RESET = "\u001B[0m";
-    private static final String YELLOW = "\u001B[33m";
     private static final String CYAN = "\u001B[36m";
+    private static final String MAGENTA = "\u001B[35m";
+    private static final String RED = "\u001B[31m";
 
     private static final int MINIMUM_YEAR = 1;
     private static final int MINIMUM_MONTH = 1;
     private static final int MAXIMUM_MONTH = 12;
 
-    public Calendar(MonthYear monthYear, String firstDay) throws IllegalArgumentException {
+    public Calendar(MonthYear monthYear, String firstDay) throws CalendarException {
         if (monthYear.year() < MINIMUM_YEAR) {
-            throw new IllegalArgumentException("Year must be at least " + MINIMUM_YEAR + ".");
+            throw new CalendarException("Year must be at least " + MINIMUM_YEAR + ".");
         }
 
         if (monthYear.month() < MINIMUM_MONTH || monthYear.month() > MAXIMUM_MONTH) {
-            throw new IllegalArgumentException(
+            throw new CalendarException(
                     "Month must be between " + MINIMUM_MONTH + " and " + MAXIMUM_MONTH + ".");
         }
 
@@ -69,9 +72,16 @@ public class Calendar {
         int startIndex = startDay.ordinal();
 
         for (int i = 0; i < daysOfWeek.length; i++) {
-            String color = (i == 0) ? YELLOW : CYAN;
-            System.out.printf("%s%4s%s", color, daysOfWeek[(startIndex + i) % daysOfWeek.length].name().substring(0, 3),
-                    RESET);
+            String color;
+            int dayIndex = (startIndex + i) % daysOfWeek.length;
+
+            if (i == daysOfWeek.length - 2 || i == daysOfWeek.length - 1) {
+                color = MAGENTA;
+            } else {
+                color = CYAN;
+            }
+
+            System.out.printf("%s%4s%s", color, daysOfWeek[dayIndex].name().substring(0, 3), RESET);
         }
 
         System.out.println("\n ---------------------------");
@@ -83,16 +93,26 @@ public class Calendar {
     private void printDates() {
         int firstDayOfMonthIndex = getFirstDayOfMonthIndex();
         int lastDay = getLastDayOfMonth();
+        LocalDate today = LocalDate.now();
 
         for (int i = 0; i < firstDayOfMonthIndex; i++) {
             System.out.print("    ");
         }
         for (int day = 1; day <= lastDay; day++) {
-            System.out.printf("%4d", day);
+            String color = RESET;
+
+            if (today.getDayOfMonth() == day && today.getMonthValue() == monthYear.month()
+                    && today.getYear() == monthYear.year()) {
+                color = RED;
+            }
+
+            System.out.printf("%s%4d%s", color, day, RESET);
+
             if ((day + firstDayOfMonthIndex) % 7 == 0) {
                 System.out.println();
             }
         }
+
         System.out.println();
     }
 
@@ -102,10 +122,9 @@ public class Calendar {
      *
      * @param firstDay the first day of the week (case-insensitive)
      * @return the corresponding DayOfWeek enum value
-     * @throws Exception if the first day of the week is invalid
-     * 
+     * @throws CalendarException if the first day of the week is invalid
      */
-    private DayOfWeek getFirstDayOfWeek(String firstDay) throws IllegalArgumentException {
+    private DayOfWeek getFirstDayOfWeek(String firstDay) throws CalendarException {
         return switch (firstDay.toLowerCase()) {
             case "mon" -> DayOfWeek.MONDAY;
             case "tue" -> DayOfWeek.TUESDAY;
@@ -114,7 +133,7 @@ public class Calendar {
             case "fri" -> DayOfWeek.FRIDAY;
             case "sat" -> DayOfWeek.SATURDAY;
             case "sun" -> DayOfWeek.SUNDAY;
-            default -> throw new IllegalArgumentException(
+            default -> throw new CalendarException(
                     "Invalid first day of the week. Must be one of: mon, tue, wed, thu, fri, sat, sun.");
         };
     }
@@ -145,7 +164,6 @@ public class Calendar {
      */
     protected int getLastDayOfMonth() {
         Month monthEnum = Month.of(monthYear.month());
-
         return monthEnum.length(Year.isLeap(monthYear.year()));
     }
 }

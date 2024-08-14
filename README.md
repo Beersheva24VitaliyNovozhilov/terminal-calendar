@@ -4,10 +4,11 @@
 
 ## HWs/CWs
 
-* HW 17 - Terminal Calendar with POSIX-compliant CLI and ASCII coloring.
+* HW 17 - Terminal Calendar with POSIX-compliant CLI and ANSI coloring.
 
 Features:
 
+* Highlight today's date.
 * Print calendar for the current month and year.
 * Print calendar for a given month and year.
 * First day of the week offset (can be set with `-f` or `--firstday`)
